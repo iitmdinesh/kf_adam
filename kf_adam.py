@@ -16,13 +16,13 @@ class KFAdam(Optimizer):
             running averages of error variances (default: 0.95)
         step_size_limit: maximum step size (default: 1.0)
         eps: term added to the denominator to improve
-            numerical stability (default: 1e-6)\
+            numerical stability (default: 1e-6)
     """
 
     def __init__(
             self,
             params,
-            lr: float = 1e-2,
+            lr: float = 1e-3,
             beta: float = 0.95,
             step_size_limit: float = 1.0,
             eps: float = 1e-6,
