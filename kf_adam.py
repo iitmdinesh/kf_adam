@@ -81,11 +81,11 @@ class KFAdam(Optimizer):
                         'KFAdam does not support sparse gradients, '
                         'please consider SparseAdam instead'
                     )
-
+                where = grad.abs() > 0
                 state = self.state[p]
                 if len(state) == 0:
-                    sigma_init = (grad.pow(2).mean() + eps).sqrt()
-                    state['iter'] = 1
+                    sigma_init = (grad.pow(2)[where].mean() + eps).sqrt()
+                    state['iter'] = where.long()
                     state['estimate'] = torch.zeros_like(
                         p.data, memory_format=torch.preserve_format
                     )
@@ -106,15 +106,24 @@ class KFAdam(Optimizer):
                 innovation = grad - prediction
                 estimate = prediction + kalman_gain * innovation
                 estimate_error = (1.0 - kalman_gain).clamp(min=0.0) * prediction_error
-                state['estimate_error'] = estimate_error
-                state['estimate'] = estimate
-                state['process_variance'] = process_variance * beta + (1.0 - beta) * innovation.pow(2)
-                state['measurement_variance'] = measurement_variance * beta + (1.0 - beta) * (grad - estimate).pow(2)
+                state['estimate_error'] = torch.where(where, estimate_error, state['estimate_error'])
+                state['estimate'] = torch.where(where, estimate, state['estimate'])
+                state['process_variance'] = torch.where(
+                    where, process_variance * beta + (1.0 - beta) * innovation.pow(2), state['process_variance'])
+                state['measurement_variance'] = torch.where(
+                    where,
+                    measurement_variance * beta + (1.0 - beta) * (grad - estimate).pow(2),
+                    state['measurement_variance']
+                )
 
-                step = -lr * norm * estimate / ((estimate_error / (1.0 - beta ** state['iter'])).sqrt() + eps)
+                step = -lr * norm * estimate / \
+                       (torch.sqrt(estimate_error /
+                                   (1.0 - torch.where(where, beta ** state['iter'], torch.zeros_like(estimate_error))))
+                        + eps)
                 step = step.clamp(-step_size_limit, step_size_limit)
+                step = torch.where(where, step, torch.zeros_like(step))
 
                 p.data.add_(step)
-                state['iter'] += 1
+                state['iter'] = state['iter'] + where.long()
 
         return loss
