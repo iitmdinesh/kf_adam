@@ -89,7 +89,7 @@ class KFAdam(Optimizer):
                     state['estimate'] = torch.zeros_like(
                         p.data, memory_format=torch.preserve_format
                     )
-                    state['estimate_error'] = 100 * sigma_init * torch.ones_like(
+                    state['estimate_error'] = sigma_init * torch.ones_like(
                         p.data, memory_format=torch.preserve_format
                     )
                     state['process_variance'] = sigma_init * torch.ones_like(
