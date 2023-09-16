@@ -1,5 +1,3 @@
-from typing import Optional
-
 import torch
 from torch.optim.optimizer import Optimizer
 
@@ -26,16 +24,10 @@ class KFAdam(Optimizer):
             params,
             lr: float = 1e-3,
             beta: float = 0.95,
-            step_size_limit: Optional[float] = None,
             eps: float = 1e-6,
     ):
         if lr <= 0.0:
             raise ValueError('Invalid learning rate: {}'.format(lr))
-        if step_size_limit is None:
-            step_size_limit = lr
-        else:
-            if step_size_limit < 0.0:
-                raise ValueError('Invalid step_size_limit value: {}'.format(step_size_limit))
         if not (0.0 < beta < 1.0):
             raise ValueError('Invalid beta value: {}'.format(beta))
         if eps < 0.0:
@@ -44,7 +36,6 @@ class KFAdam(Optimizer):
         defaults = {
             'lr': lr,
             'beta': beta,
-            'step_size_limit': step_size_limit,
             'eps': eps,
         }
         super().__init__(params, defaults)
@@ -63,7 +54,6 @@ class KFAdam(Optimizer):
 
             lr = group['lr']
             beta = group['beta']
-            step_size_limit = group['step_size_limit']
             eps = group['eps']
 
             norm_sq = 0.0
@@ -122,7 +112,6 @@ class KFAdam(Optimizer):
                 state['estimate'] = torch.where(where, estimate, state['estimate'])
 
                 step = -lr * norm * estimate / (torch.sqrt(estimate_error + estimate.pow(2)) + eps)
-                step = step.clamp(-step_size_limit, step_size_limit)
                 step = torch.where(where, step, torch.zeros_like(step))
 
                 p.data.add_(step)
