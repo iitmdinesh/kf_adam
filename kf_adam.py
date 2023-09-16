@@ -121,7 +121,7 @@ class KFAdam(Optimizer):
                 state['estimate_error'] = estimate_error
                 state['estimate'] = torch.where(where, estimate, state['estimate'])
 
-                step = -lr * norm * estimate / (torch.sqrt(estimate_error) + eps)
+                step = -lr * norm * estimate / (torch.sqrt(estimate_error + estimate.pow(2)) + eps)
                 step = step.clamp(-step_size_limit, step_size_limit)
                 step = torch.where(where, step, torch.zeros_like(step))
 
