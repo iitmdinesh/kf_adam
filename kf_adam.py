@@ -13,7 +13,7 @@ class KFAdam(Optimizer):
         beta: coefficient used for computing
             running averages of error variances (default: 0.95)
         eps: term added to the denominator to improve
-            numerical stability (default: 1e-6)
+            numerical stability (default: 1e-12)
     """
 
     def __init__(
@@ -21,7 +21,7 @@ class KFAdam(Optimizer):
             params,
             lr: float = 1e-3,
             beta: float = 0.95,
-            eps: float = 1e-6,
+            eps: float = 1e-12,
     ):
         if lr <= 0.0:
             raise ValueError('Invalid learning rate: {}'.format(lr))
