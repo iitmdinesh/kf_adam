@@ -56,21 +56,11 @@ class KFAdam(Optimizer):
             beta = group['beta']
             eps = group['eps']
 
-            norm_sq = 0.0
             for p in group['params']:
                 if p.grad is None:
                     continue
 
                 grad = p.grad.data
-                norm_sq += grad.pow(2).sum()
-
-            norm = torch.sqrt(norm_sq)
-
-            for p in group['params']:
-                if p.grad is None:
-                    continue
-
-                grad = p.grad.data / (eps + norm)
                 where = grad != 0
                 if grad.is_sparse:
                     raise RuntimeError(
@@ -111,7 +101,7 @@ class KFAdam(Optimizer):
                 state['estimate_error'] = estimate_error
                 state['estimate'] = torch.where(where, estimate, state['estimate'])
 
-                step = -lr * norm * estimate / (torch.sqrt(estimate_error + estimate.pow(2)) + eps)
+                step = -lr * estimate / (torch.sqrt(estimate_error + estimate.pow(2)) + eps)
                 step = torch.where(where, step, torch.zeros_like(step))
 
                 p.data.add_(step)
