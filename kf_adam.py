@@ -3,10 +3,8 @@ from torch.optim.optimizer import Optimizer
 
 
 class KFAdam(Optimizer):
-    r"""Implements the KFAdam optimization algorithm, which uses std deviation for the denominator rather than
-    sqrt(energy) term used in conventional Adam. Why is this a good idea? If gradient stddev for a param is small, we
-    should take larger steps as it means the gradient is consistent over time. The gradient and the standard deviation
-    are estimated using a Kalman Filter instead of an EMA filter
+    r"""Implements the KFAdam optimization algorithm. The gradient and the standard deviation
+    are estimated using a Kalman Filter instead of an EMA filter.
 
     Arguments:
         params: iterable of parameters to optimize or dicts defining
@@ -14,7 +12,6 @@ class KFAdam(Optimizer):
         lr: learning rate (default: 1e-3)
         beta: coefficient used for computing
             running averages of error variances (default: 0.95)
-        step_size_limit: maximum step size (default: 1.0)
         eps: term added to the denominator to improve
             numerical stability (default: 1e-6)
     """
