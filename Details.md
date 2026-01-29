@@ -1,5 +1,9 @@
 # KF-Adam: A Kalman Filter Based Optimizer for De-noising SGD
 
+**Dinesh Ramasamy**
+
+*January 28, 2026*
+
 ## Abstract
 
 Stochastic gradients are inherently noisy due to minibatch sampling, and this noise can slow convergence and destabilize training.
@@ -11,10 +15,10 @@ The reference implementation is available at <https://github.com/iitmdinesh/kf_a
 
 Training modern deep networks relies on variants of stochastic gradient descent (SGD).
 Although minibatching makes optimization scalable, it introduces variance into the gradient estimate, which can lead to oscillatory updates and slower progress.
-Adaptive optimizers such as Adam address some issues by scaling updates using running moment estimates, but the instantaneous gradient signal can remain noisy.
+Adaptive optimizers such as Adam [@kingma2015adam] address some issues by scaling updates using running moment estimates, but the instantaneous gradient signal can remain noisy.
 
 This work considers the gradient (or a transformed gradient statistic) as a latent, slowly varying quantity, observed through noisy minibatch measurements.
-This perspective suggests applying a Kalman filter to produce a filtered (denoised) gradient estimate that can be fed into an adaptive optimizer.
+This perspective suggests applying a Kalman filter [@kalman1960new] to produce a filtered (denoised) gradient estimate that can be fed into an adaptive optimizer.
 
 ## 2. Background
 
@@ -27,7 +31,7 @@ $$
 \theta_{t+1} = \theta_t - \eta\, g_t.
 $$
 
-Adam maintains exponential moving averages of first and second moments of gradients and uses bias correction to form an adaptive step.
+Adam maintains exponential moving averages of first and second moments of gradients and uses bias correction to form an adaptive step [@kingma2015adam].
 
 ### 2.2 Kalman filtering viewpoint
 
@@ -71,19 +75,43 @@ $$
 $$
 
 Here $\odot$ denotes elementwise multiplication.
-
 ### 3.2 Online noise estimation via running moments
 
-In practice, the process/measurement noise levels ($Q$ and $R$) may be unknown and can vary over training.
-A simple approach is to estimate them online using running (exponentially-weighted) moments of the filter residual (innovation) $\nu_t = z_t - \hat x^-_t$.
-Following adaptive Kalman filtering ideas based on innovation covariance estimation [paper](https://article.nadiapub.com/IJCA/vol10_no10/6.pdf), one can update a diagonal estimate of the innovation covariance
+In practice, the process/measurement noise levels ($Q$ and $R$) may be unknown.
+Inspired by KF-NCE-style covariance estimation [@lv2017kfnce], we can estimate them from consecutive noisy measurements.
+
+Under the random-walk gradient model used above ($A=I$ and $H=I$), define
 
 $$
-\widehat S_t = \beta\, \widehat S_{t-1} + (1-\beta)\, (\nu_t \odot \nu_t),
+\begin{aligned}
+\xi_t &= z_t - z_{t-1}, \\
+\eta_t &= z_t - z_{t-2}.
+\end{aligned}
 $$
 
-and tie $R$ to $\widehat S_t$ (for example, $R_t = \widehat S_t$ or $R_t = \gamma\, \widehat S_t$ with a scalar $\gamma>0$).
-This makes the Kalman gain $K_t$ respond to the observed gradient noise level, analogously to how Adam's second-moment estimate rescales updates.
+Let $S_{\xi,t}$ and $S_{\eta,t}$ denote (diagonal) running covariance estimates of $\xi_t$ and $\eta_t$.
+A direct "law of large numbers" (online average) update is
+
+$$
+\begin{aligned}
+S_{\xi,t} &= \frac{t-1}{t} S_{\xi,t-1} + \frac{1}{t} (\xi_t \odot \xi_t), \\
+S_{\eta,t} &= \frac{t-1}{t} S_{\eta,t-1} + \frac{1}{t} (\eta_t \odot \eta_t).
+\end{aligned}
+$$
+
+(Alternatively, one may use exponential forgetting with a constant $\beta$ by replacing $\frac{t-1}{t}$ with $\beta$.)
+
+For diagonal covariances, the KF-NCE closed-form relationships simplify to elementwise expressions
+
+$$
+\begin{aligned}
+R_t &= \frac{1}{2}\, (S_{\eta,t} - S_{\xi,t})^{\odot -1}, \\
+Q_t &= S_{\xi,t} - 2 R_t,
+\end{aligned}
+$$
+
+where $(\cdot)^{\odot -1}$ denotes elementwise inverse.
+These estimates can be plugged into the diagonal Kalman predict--update above.
 
 ### 3.3 Combining the filter with Adam
 
@@ -112,3 +140,7 @@ When writing up results, include (a) filter hyperparameters (e.g., diagonal $Q$ 
 
 KF-Adam frames stochastic gradient noise as a measurement process and uses Kalman filtering to produce a denoised gradient signal for adaptive optimization.
 Future work includes exploring structured (non-diagonal) covariance approximations and studying robustness under distribution shift.
+
+<!-- ## References
+
+This Markdown version uses citation keys compatible with many Pandoc workflows (e.g., `[@kingma2015adam]`). See `refs.bib` for the full BibTeX entries. -->
