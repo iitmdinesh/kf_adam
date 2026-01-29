@@ -85,10 +85,8 @@ class KFAdam(Optimizer):
                 state['obs_one_before_prev_var'] = state['obs_one_before_prev_var'] * beta + \
                     (1 - beta) * (grad - state['obs_one_before_prev'])[where].pow(2).mean()
                 # Reference: http://article.nadiapub.com/IJCA/vol10_no10/6.pdf
-                measurement_variance = ((state['obs_prev_var'] - 0.5 * state['obs_one_before_prev_var'])
-                                        / (1.0 - beta ** state['iter'])).clamp(min=eps)
-                process_variance = ((state['obs_one_before_prev_var'] - state['obs_prev_var'])
-                                        / (1.0 - beta ** state['iter'])).clamp(min=eps)
+                measurement_variance = 0.5 / (state['obs_one_before_prev_var'] - state['obs_prev_var'])).clamp(min=eps)
+                process_variance = (state['obs_prev_var'] - 2 * measurement_variance).clamp(min=eps)
                 prediction = state['estimate']
                 prediction_error = state['estimate_error'] + process_variance
                 kalman_gain = (prediction_error / (eps + prediction_error + measurement_variance)).clamp(min=0.0, max=1.0)
